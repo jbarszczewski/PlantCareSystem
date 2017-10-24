@@ -1,0 +1,4 @@
+﻿DS18B20 Wiring:
+Red = VDD
+Yellow = GND
+Green = Signal (pull up to VDD with 4.7k Ohm)
