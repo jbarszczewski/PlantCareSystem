@@ -2,3 +2,13 @@
 Red = VDD
 Yellow = GND
 Green = Signal (pull up to VDD with 4.7k Ohm)
+
+ESP8266 Wiring (looking at front, antenna up, from top row, left to right):
+1 = GND
+2 = NC
+3 = NC
+4 = ~11
+5 = ~10
+6 = 3.3V
+7 = NC
+8 = 3.3V

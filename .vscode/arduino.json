@@ -1,0 +1,6 @@
+{
+    "board": "arduino:avr:nano",
+    "sketch": "PlantCareSystem\\PlantCareSystem.ino",
+    "port": "COM4",
+    "configuration": "cpu=atmega328"
+}
