@@ -19,9 +19,10 @@
 #define LIGHTS_PIN 8
 #define HUMIDITY_PIN A1
 
-const float MIN_HOUR = 6;
-const float MAX_HOUR = 22;
+const int MIN_HOUR = 6;
+const int MAX_HOUR = 22;
 const float HUMIDITY_RESOLUTION = 1024;
+const bool IsLightInverted = true;
 
 const char *monthName[12] = {
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -59,12 +60,6 @@ void loop()
 	float currentTemp = sensors.getTempCByIndex(0);
 	float humidityFactor = (HUMIDITY_RESOLUTION - analogRead(HUMIDITY_PIN)) / HUMIDITY_RESOLUTION;
 
-	if (hour() > MAX_HOUR)
-		LightsState = LOW;
-	else if (hour() < MIN_HOUR)
-		LightsState = HIGH;
-	digitalWrite(LIGHTS_PIN, LightsState);
-
 	// print the temp and humidity
 	// lcd.clear();
 	// lcd.print("T: ");
@@ -76,41 +71,15 @@ void loop()
 
 	// print time and control status
 	lcd.clear();
-	printTime();
-
-	lcd.setCursor(0, 1);
-	lcd.print("Lights ");
-	if (LightsState)
-		lcd.print("ON");
-	else
-		lcd.print("OFF");
-	delay(1000);
-}
-
-void printDigits(int digits)
-{
-	if (digits < 10)
-		lcd.print('0');
-	lcd.print(digits);
-}
-
-void printTime()
-{
 	tmElements_t tm;
 
 	if (RTC.read(tm))
 	{
-		lcd.print(tm.Hour);
+		print2Digits(tm.Hour);
 		lcd.print(':');
-		lcd.print(tm.Minute);
+		print2Digits(tm.Minute);
 		lcd.print(':');
-		lcd.print(tm.Second);
-		lcd.print(' ');
-		lcd.print(tm.Day);
-		lcd.print('/');
-		lcd.print(tm.Month);
-		lcd.print('/');
-		lcd.print(tmYearToCalendar(tm.Year));
+		print2Digits(tm.Second);
 	}
 	else
 	{
@@ -123,6 +92,27 @@ void printTime()
 			lcd.print("DS1307 read error!");
 		}
 	}
+	
+	if (tm.Hour >= MAX_HOUR || tm.Hour < MIN_HOUR)
+		LightsState = IsLightInverted;
+	else if (tm.Hour <= MIN_HOUR && tm.Hour < MAX_HOUR)
+		LightsState = !IsLightInverted;
+	digitalWrite(LIGHTS_PIN, LightsState);
+
+	lcd.setCursor(0, 1);
+	lcd.print("Lights ");
+	if (LightsState ^ IsLightInverted)
+		lcd.print("ON");
+	else
+		lcd.print("OFF");
+	delay(1000);
+}
+
+void print2Digits(int number) 
+{
+	if(number < 10)
+		lcd.print('0');
+	lcd.print(number);
 }
 
 void setTime()
