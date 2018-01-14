@@ -15,14 +15,15 @@
 #include <Wire.h>
 #include <DS1307RTC.h>
 
-#define ONE_WIRE_BUS 13
 #define LIGHTS_PIN 8
+#define BUTTON_1 12
+#define ONE_WIRE_BUS 13
 #define HUMIDITY_PIN A1
 
 const int MIN_HOUR = 6;
 const int MAX_HOUR = 22;
 const float HUMIDITY_RESOLUTION = 1024;
-const bool IsLightInverted = true;
+const bool IsLightInverted = false;
 
 const char *monthName[12] = {
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -42,13 +43,15 @@ void setup()
 {
 	Serial.begin(115200);
 	pinMode(LIGHTS_PIN, OUTPUT);
+	pinMode(BUTTON_1, INPUT);
 	//thingspeak.init(SSID, PWD);
 	lcd.begin(16, 2);
 	sensors.begin();
 	lcd.print("Initializing...");
 	delay(1000);
 
-	//setTime();
+	if(digitalRead(BUTTON_1))
+		setTime();
 
 	DeviceCount = sensors.getDeviceCount();
 }
@@ -93,18 +96,31 @@ void loop()
 		}
 	}
 	
-	if (tm.Hour >= MAX_HOUR || tm.Hour < MIN_HOUR)
-		LightsState = IsLightInverted;
-	else if (tm.Hour <= MIN_HOUR && tm.Hour < MAX_HOUR)
-		LightsState = !IsLightInverted;
-	digitalWrite(LIGHTS_PIN, LightsState);
-
 	lcd.setCursor(0, 1);
 	lcd.print("Lights ");
-	if (LightsState ^ IsLightInverted)
-		lcd.print("ON");
-	else
+
+	// if lights off
+	if (tm.Hour >= MAX_HOUR || tm.Hour < MIN_HOUR)
+	{
+		LightsState = IsLightInverted;
 		lcd.print("OFF");
+	}
+	// if ligts on
+	else if (tm.Hour >= MIN_HOUR && tm.Hour < MAX_HOUR)
+	{
+		LightsState = !IsLightInverted;
+		lcd.print("ON");
+	}
+	
+	digitalWrite(LIGHTS_PIN, LightsState);
+
+	//read button input
+	bool buttonState = digitalRead(BUTTON_1);
+	if(buttonState)
+		lcd.print(" YES");
+	else
+		lcd.print(" NO");
+
 	delay(1000);
 }
 
