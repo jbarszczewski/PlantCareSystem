@@ -5,7 +5,6 @@
 */
 
 #include <SoftwareSerial.h>
-//#include "ESP8266ThingSpeak.h"
 #include "Secrets.h"
 #include <stdlib.h>
 #include <DallasTemperature.h>
@@ -14,24 +13,30 @@
 #include <TimeLib.h>
 #include <Wire.h>
 #include <DS1307RTC.h>
+#include <elapsedMillis.h>
+//#include "ESP8266ThingSpeak.h"
 
 #define LIGHTS_PIN 8
+#define WATER_PIN 9
 #define BUTTON_1 12
 #define ONE_WIRE_BUS 13
 #define HUMIDITY_PIN A1
 
 const int MIN_HOUR = 6;
 const int MAX_HOUR = 22;
+const int WATER_ON_MILLISECONDS = 6000;
+const int WATER_OFF_MILLISECONDS = 30000;
 const float HUMIDITY_RESOLUTION = 1024;
 const bool IsLightInverted = false;
 
 const char *monthName[12] = {
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-};
+		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
 int LightsState = LOW;
+int WaterState = LOW;
 int DeviceCount;
+elapsedMillis waterTimer;
 
 //ESP8266ThingSpeakClass thingspeak;
 LiquidCrystal lcd(7, 6, 2, 3, 4, 5);
@@ -43,6 +48,7 @@ void setup()
 {
 	Serial.begin(115200);
 	pinMode(LIGHTS_PIN, OUTPUT);
+	pinMode(WATER_PIN, OUTPUT);
 	pinMode(BUTTON_1, INPUT);
 	//thingspeak.init(SSID, PWD);
 	lcd.begin(16, 2);
@@ -50,8 +56,8 @@ void setup()
 	lcd.print("Initializing...");
 	delay(1000);
 
-	if(digitalRead(BUTTON_1))
-		setTime();
+	//	if (digitalRead(BUTTON_1))
+	setTime();
 
 	DeviceCount = sensors.getDeviceCount();
 }
@@ -62,15 +68,6 @@ void loop()
 	sensors.requestTemperatures();
 	float currentTemp = sensors.getTempCByIndex(0);
 	float humidityFactor = (HUMIDITY_RESOLUTION - analogRead(HUMIDITY_PIN)) / HUMIDITY_RESOLUTION;
-
-	// print the temp and humidity
-	// lcd.clear();
-	// lcd.print("T: ");
-	// lcd.print(currentTemp);
-	// lcd.print(" C");
-	// lcd.setCursor(0, 1);
-	// lcd.print("H: ");
-	// lcd.print(humidityFactor);
 
 	// print time and control status
 	lcd.clear();
@@ -95,9 +92,13 @@ void loop()
 			lcd.print("DS1307 read error!");
 		}
 	}
-	
+
+	//print water pump timer value
+	lcd.print(" WT: ");
+	lcd.print(waterTimer / 1000);
+
 	lcd.setCursor(0, 1);
-	lcd.print("Lights ");
+	lcd.print("L: ");
 
 	// if lights off
 	if (tm.Hour >= MAX_HOUR || tm.Hour < MIN_HOUR)
@@ -111,22 +112,36 @@ void loop()
 		LightsState = !IsLightInverted;
 		lcd.print("ON");
 	}
-	
-	digitalWrite(LIGHTS_PIN, LightsState);
 
-	//read button input
-	bool buttonState = digitalRead(BUTTON_1);
-	if(buttonState)
-		lcd.print(" YES");
+	lcd.print(" W: ");
+	if (WaterState == HIGH)
+	{
+		lcd.print("ON");
+		if (waterTimer > WATER_ON_MILLISECONDS)
+		{
+			WaterState = LOW;
+			waterTimer = 0;
+		}
+	}
 	else
-		lcd.print(" NO");
+	{
+		lcd.print("OFF");
+		if (waterTimer > WATER_OFF_MILLISECONDS)
+		{
+			WaterState = HIGH;
+			waterTimer = 0;
+		}
+	}
 
-	delay(1000);
+	digitalWrite(LIGHTS_PIN, LightsState);
+	digitalWrite(WATER_PIN, WaterState);
+
+	delay(500);
 }
 
-void print2Digits(int number) 
+void print2Digits(int number)
 {
-	if(number < 10)
+	if (number < 10)
 		lcd.print('0');
 	lcd.print(number);
 }
@@ -172,7 +187,7 @@ void setTime()
 
 	if (RTC.write(tm))
 	{
-		Serial.println("Set");		
+		Serial.println("Set");
 	}
 	else
 		Serial.println("Not set");
