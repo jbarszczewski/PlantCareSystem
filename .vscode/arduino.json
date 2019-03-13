@@ -1,5 +1,7 @@
 {
-    "board": "arduino:avr:uno",
+    "board": "arduino:avr:nano",
     "sketch": "PlantCareSystem\\PlantCareSystem.ino",
-    "port": "COM3"
+    "port": "COM5",
+    "configuration": "cpu=atmega328",
+    "programmer": "AVRISP mkII"
 }

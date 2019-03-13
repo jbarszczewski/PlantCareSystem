@@ -24,17 +24,19 @@
 
 const int MIN_HOUR = 6;
 const int MAX_HOUR = 22;
-const int WATER_ON_MILLISECONDS = 6000;
-const int WATER_OFF_MILLISECONDS = 30000;
+const int WATER_TIME_HOUR = 7;
+const int WATER_ON_MILLISECONDS = 20000;
 const float HUMIDITY_RESOLUTION = 1024;
-const bool IsLightInverted = false;
+const bool LightOnState = true;
+const bool WaterOnState = false;
 
 const char *monthName[12] = {
 		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
 		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
-int LightsState = LOW;
-int WaterState = LOW;
+int LightsState = !LightOnState;
+int WaterState = !WaterOnState;
+bool NewDay = true;
 int DeviceCount;
 elapsedMillis waterTimer;
 
@@ -94,8 +96,11 @@ void loop()
 	}
 
 	//print water pump timer value
-	lcd.print(" WT: ");
-	lcd.print(waterTimer / 1000);
+	if (WaterState == WaterOnState)
+	{
+		lcd.print(" WT: ");
+		lcd.print(waterTimer / 1000);
+	}
 
 	lcd.setCursor(0, 1);
 	lcd.print("L: ");
@@ -103,34 +108,40 @@ void loop()
 	// if lights off
 	if (tm.Hour >= MAX_HOUR || tm.Hour < MIN_HOUR)
 	{
-		LightsState = IsLightInverted;
+		LightsState = !LightOnState;
 		lcd.print("OFF");
 	}
 	// if ligts on
 	else if (tm.Hour >= MIN_HOUR && tm.Hour < MAX_HOUR)
 	{
-		LightsState = !IsLightInverted;
+		LightsState = LightOnState;
 		lcd.print("ON");
 	}
 
 	lcd.print(" W: ");
-	if (WaterState == HIGH)
+	if (WaterState == WaterOnState)
 	{
 		lcd.print("ON");
 		if (waterTimer > WATER_ON_MILLISECONDS)
 		{
-			WaterState = LOW;
+			WaterState = !WaterOnState;
 			waterTimer = 0;
 		}
 	}
 	else
 	{
 		lcd.print("OFF");
-		if (waterTimer > WATER_OFF_MILLISECONDS)
+		if (tm.Hour == WATER_TIME_HOUR && NewDay)
 		{
-			WaterState = HIGH;
+			WaterState = WaterOnState;
 			waterTimer = 0;
+			NewDay = false;
 		}
+	}
+
+	if (tm.Hour < WATER_TIME_HOUR)
+	{
+		NewDay = true;
 	}
 
 	digitalWrite(LIGHTS_PIN, LightsState);
