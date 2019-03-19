@@ -24,7 +24,8 @@
 
 const int MIN_HOUR = 6;
 const int MAX_HOUR = 22;
-const int WATER_TIME_HOUR = 7;
+const int WATERING_STEPS = 2;
+const int WATER_TIME_HOURS[WATERING_STEPS] = {8, 18};
 const int WATER_ON_MILLISECONDS = 20000;
 const float HUMIDITY_RESOLUTION = 1024;
 const bool LightOnState = true;
@@ -36,7 +37,7 @@ const char *monthName[12] = {
 
 int LightsState = !LightOnState;
 int WaterState = !WaterOnState;
-bool NewDay = true;
+int WateringIndex = 0;
 int DeviceCount;
 elapsedMillis waterTimer;
 
@@ -95,12 +96,10 @@ void loop()
 		}
 	}
 
-	//print water pump timer value
-	if (WaterState == WaterOnState)
-	{
-		lcd.print(" WT: ");
-		lcd.print(waterTimer / 1000);
-	}
+	//print watering index
+	lcd.print(" WS: ");
+	//	lcd.print(waterTimer / 1000);
+	lcd.print(WateringIndex);
 
 	lcd.setCursor(0, 1);
 	lcd.print("L: ");
@@ -131,17 +130,17 @@ void loop()
 	else
 	{
 		lcd.print("OFF");
-		if (tm.Hour == WATER_TIME_HOUR && NewDay)
+		if (tm.Hour == WATER_TIME_HOURS[WateringIndex])
 		{
 			WaterState = WaterOnState;
 			waterTimer = 0;
-			NewDay = false;
+			WateringIndex++;
 		}
 	}
 
-	if (tm.Hour < WATER_TIME_HOUR)
+	if (WateringIndex == WATERING_STEPS)
 	{
-		NewDay = true;
+		WateringIndex = 0;
 	}
 
 	digitalWrite(LIGHTS_PIN, LightsState);
