@@ -24,9 +24,9 @@
 
 const int MIN_HOUR = 6;
 const int MAX_HOUR = 22;
-const int WATERING_STEPS = 2;
-const int WATER_TIME_HOURS[WATERING_STEPS] = {8, 18};
-const int WATER_ON_MILLISECONDS = 20000;
+const int WATERING_STEPS = 4;
+const int WATER_TIME_HOURS[WATERING_STEPS] = {6, 10, 16, 22};
+const int WATER_ON_MILLISECONDS = 30000;
 const float HUMIDITY_RESOLUTION = 1024;
 const bool LightOnState = true;
 const bool WaterOnState = false;
@@ -38,13 +38,10 @@ const char *monthName[12] = {
 int LightsState = !LightOnState;
 int WaterState = !WaterOnState;
 int WateringIndex = 0;
-int DeviceCount;
 elapsedMillis waterTimer;
 
 //ESP8266ThingSpeakClass thingspeak;
 LiquidCrystal lcd(7, 6, 2, 3, 4, 5);
-OneWire ourWire(ONE_WIRE_BUS);
-DallasTemperature sensors(&ourWire);
 
 // the setup function runs once when you press reset or power the board
 void setup()
@@ -55,23 +52,26 @@ void setup()
 	pinMode(BUTTON_1, INPUT);
 	//thingspeak.init(SSID, PWD);
 	lcd.begin(16, 2);
-	sensors.begin();
 	lcd.print("Initializing...");
 	delay(1000);
 
 	//	if (digitalRead(BUTTON_1))
 	setTime();
 
-	DeviceCount = sensors.getDeviceCount();
+	tmElements_t tmTemp;
+
+	if (RTC.read(tmTemp))
+	{
+		while (tmTemp.Hour > WATER_TIME_HOURS[WateringIndex])
+		{
+			WateringIndex++;
+		}
+	}
 }
 
 // the loop function runs over and over again until power down or reset
 void loop()
 {
-	sensors.requestTemperatures();
-	float currentTemp = sensors.getTempCByIndex(0);
-	float humidityFactor = (HUMIDITY_RESOLUTION - analogRead(HUMIDITY_PIN)) / HUMIDITY_RESOLUTION;
-
 	// print time and control status
 	lcd.clear();
 	tmElements_t tm;
