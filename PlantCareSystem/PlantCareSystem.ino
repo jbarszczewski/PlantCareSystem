@@ -7,33 +7,28 @@
 #include <SoftwareSerial.h>
 #include "Secrets.h"
 #include <stdlib.h>
-#include <DallasTemperature.h>
 #include <OneWire.h>
 #include <LiquidCrystal.h>
 #include <TimeLib.h>
 #include <Wire.h>
 #include <DS1307RTC.h>
 #include <elapsedMillis.h>
-//#include "ESP8266ThingSpeak.h"
 
-#define LIGHTS_PIN 8
-#define WATER_PIN 9
-#define BUTTON_1 12
-#define ONE_WIRE_BUS 13
-#define HUMIDITY_PIN A1
+#define LIGHTS_PIN 8	   //uno 12 //nano 8
+#define WATER_PIN 9		   //uno 13 //nano 9
+#define WATER_LEVEL_PIN 10 //uno 8 //nano 10
 
 const int MIN_HOUR = 6;
 const int MAX_HOUR = 22;
-const int WATERING_STEPS = 4;
-const int WATER_TIME_HOURS[WATERING_STEPS] = {6, 10, 16, 22};
-const int WATER_ON_MILLISECONDS = 30000;
-const float HUMIDITY_RESOLUTION = 1024;
+const int WATERING_STEPS = 9;
+const int WATER_TIME_HOURS[WATERING_STEPS] = {6, 8, 10, 12, 14, 16, 18, 20, 22};
+const long WATER_ON_MILLISECONDS = 240000;
 const bool LightOnState = true;
 const bool WaterOnState = false;
 
 const char *monthName[12] = {
-		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+	"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
 int LightsState = !LightOnState;
 int WaterState = !WaterOnState;
@@ -49,13 +44,11 @@ void setup()
 	Serial.begin(115200);
 	pinMode(LIGHTS_PIN, OUTPUT);
 	pinMode(WATER_PIN, OUTPUT);
-	pinMode(BUTTON_1, INPUT);
-	//thingspeak.init(SSID, PWD);
+	pinMode(WATER_LEVEL_PIN, INPUT);
 	lcd.begin(16, 2);
 	lcd.print("Initializing...");
 	delay(1000);
 
-	//	if (digitalRead(BUTTON_1))
 	setTime();
 
 	tmElements_t tmTemp;
@@ -117,11 +110,13 @@ void loop()
 		lcd.print("ON");
 	}
 
+	// watering
+	int waterLevel = !digitalRead(WATER_LEVEL_PIN);
 	lcd.print(" W: ");
 	if (WaterState == WaterOnState)
 	{
 		lcd.print("ON");
-		if (waterTimer > WATER_ON_MILLISECONDS)
+		if (waterTimer > WATER_ON_MILLISECONDS || waterLevel)
 		{
 			WaterState = !WaterOnState;
 			waterTimer = 0;
@@ -141,6 +136,16 @@ void loop()
 	if (WateringIndex == WATERING_STEPS)
 	{
 		WateringIndex = 0;
+	}
+
+	// water level check
+	if (waterLevel)
+	{
+		lcd.print(" 1");
+	}
+	else
+	{
+		lcd.print(" 0");
 	}
 
 	digitalWrite(LIGHTS_PIN, LightsState);
