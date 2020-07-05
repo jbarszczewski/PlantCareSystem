@@ -49,7 +49,9 @@ void setup()
 	lcd.print("Initializing...");
 	delay(1000);
 
-	setTime();
+	//only use once, otherwise it will reset time
+	//on reboot to last compile tie
+	// setTime();
 
 	tmElements_t tmTemp;
 
